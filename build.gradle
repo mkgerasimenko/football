@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+    id 'io.qameta.allure' version '2.12.0'
+    id 'io.qameta.allure-adapter' version '2.12.0'
+    id 'com.adarshr.test-logger' version '4.0.0'
+}
+
+group = 'com.football'
+version = '0.0.1'
+
+java {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
+allure {
+    version = '2.33.0'
+    adapter {
+        aspectjWeaver = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://plugins.gradle.org/m2/' }
+}
+
+dependencies {
+    implementation 'io.qameta.allure:allure-testng:2.29.1'
+    implementation 'io.qameta.allure:allure-rest-assured:2.29.1'
+    implementation 'org.testng:testng:7.11.0'
+    implementation 'io.rest-assured:rest-assured:5.5.1'
+    implementation 'org.assertj:assertj-core:3.27.3'
+    implementation 'io.github.sskorol:test-data-supplier:2.3.0'
+    implementation 'org.aspectj:aspectjweaver:1.9.24'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+    implementation 'one.util:streamex:0.8.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
+    implementation 'org.aeonbits.owner:owner:1.0.12'
+
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+}
+
+tasks.withType(Test).configureEach {
+    testlogger {
+        theme = 'mocha-parallel'
+        showCauses = true
+        showExceptions = true
+        showStackTraces = true
+        showFullStackTraces = true
+        showSummary = true
+        showSimpleNames = true
+        showStandardStreams = System.getenv('SHOW_STANDARD_STREAMS')?.toBoolean()
+        logLevel = 'LIFECYCLE'
+    }
+
+    useTestNG {
+        useDefaultListeners = false
+        listeners.add('com.football.listeners.APIListener')
+        String suiteName = System.getenv('API_SUITE_NAME') ?: 'smoke-suite-api'
+        suites "src/test/resources/${suiteName}.xml"
+    }
+}

@@ -1,0 +1,13 @@
+.allure
+.gradle
+.idea
+allure-*
+build
+**logs
+**video
+.env
+**/*_Budget*/*
+history*
+report
+users-local*.json
+allure
