@@ -1,93 +1,145 @@
-# football
+# Football API Test Suite
 
+TestNG‑ and Rest‑Assured–based automated tests for the Football “player” API, with Allure reporting and quality checks.
 
+---
 
-## Getting started
+## Application Under Test
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+We are testing the following application and its Player controller:
+[Swagger UI – Player Controller](http://3.68.165.45/swagger-ui.html#/player-controller)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+## Covered Endpoints
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+All endpoints live under the `/player/` root path:
 
+| Operation       | HTTP Method | Path                           | Test helper                          |
+|-----------------|-------------|--------------------------------|--------------------------------------|
+| Create player   | **GET**     | `/player/create/{editor}`      | `PlayerAPI#createPlayer(...)`        |
+| Update player   | **PATCH**   | `/player/update/{editor}/{id}` | `PlayerAPI#updatePlayer(...)`        |
+| Read single     | **POST**    | `/player/get`                  | `PlayerAPI#readPlayer(...)`          |
+| Read all        | **GET**     | `/player/get/all`              | `PlayerAPI#readPlayers()`            |
+| Delete player   | **DELETE**  | `/player/delete/{editor}`      | `PlayerAPI#deletePlayer(...)`        |
+
+---
+
+## How to Run the Tests
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/mkgerasimenko/football.git
+   cd football
+   ```
+
+2. **Prerequisites**
+    - Java 17
+
+3. **Execute tests**
+   ```bash
+   ./gradlew clean test
+   ```
+   By default TestNG uses the suite file `src/test/resources/{API_SUITE_NAME}.xml`, falling back to `smoke-suite-api.xml`.
+
+---
+
+## Generating Allure Reports
+
+After running tests, generate and view your Allure report:
+
+```bash
+# generate static HTML report
+./gradlew allureReport --depends-on-tests
+
+# serve report locally at http://localhost:xxxx
+./gradlew allureServe
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/mkgerasymenko/football.git
-git branch -M main
-git push -uf origin main
+
+- Raw results (JSON) are in `build/allure-results/`
+- Final HTML is in `build/reports/allure-report/allureReport/index.html`
+
+---
+
+## Configuration
+
+All runtime settings live in `APIConfig.java`:
+
+```java
+@Config.LoadPolicy(Config.LoadType.MERGE)
+public interface APIConfig extends Config {
+    APIConfig CONFIG = ConfigCache.getOrCreate(APIConfig.class, System.getenv(), System.getProperties());
+
+    @DefaultValue("http://3.68.165.45")
+    String apiUrl();
+
+    @DefaultValue("6")
+    int randomCharactersAmount();
+
+    @DefaultValue("17")
+    int minAge();
+
+    @DefaultValue("59")
+    int maxAge();
+}
 ```
 
-## Integrate with your tools
+Override via environment variables or JVM properties:
 
-- [ ] [Set up project integrations](https://gitlab.com/mkgerasymenko/football/-/settings/integrations)
+```bash
+export apiUrl="https://my.api.host"
+export randomCharactersAmount=8
+export minAge=18
+export maxAge=60
 
-## Collaborate with your team
+# or
+./gradlew test -DapiUrl=https://my.api.host -DrandomCharactersAmount=8
+```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+Optional runner variables:
 
-## Test and Deploy
+- `API_SUITE_NAME` – TestNG XML suite name (in `src/test/resources/`)
+- `SHOW_STANDARD_STREAMS` – `true` to include stdout/stderr in test logs
 
-Use the built-in continuous integration in GitLab.
+---
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## Known Issues
 
-***
+1. **Inconsistent HTTP verbs**
+    - **Create** uses `GET` (should be `POST` for REST best practices)
+    - **Read single** uses `POST` (should be `GET`)
+    - **Read all** correctly uses `GET`
 
-# Editing this README
+2. **No error message in response**  
+   On validation or “not found” errors, the API returns only an HTTP status code (e.g. `400`, `403`) with an empty body—no `{ "message": ... }` field—making debugging harder.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## Possible Bugs & Gaps
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+- **Side‑effect in GET**: Creating via `GET` may be cached by proxies or violate idempotency.
+- **Error‑case coverage**: No negative tests for invalid roles, malformed JSON, or unexpected HTTP methods (`PUT`, `OPTIONS`).
+- **Boundary testing**: No tests for minimum/maximum age values or zero/negative IDs.
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Critical Issues
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Based on the Swagger definition, the following critical API issues have been identified:
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- **No authentication/authorization**: All Player endpoints are publicly accessible without any API key or token.
+- **Lack of pagination**: The `/player/get/all` endpoint returns all players in one response, risk of large payloads and performance degradation.
+- **Non‑RESTful use of HTTP verbs**: Resource creation via `GET` breaks idempotency and caching semantics.
+- **Unclear update semantics**: `/player/update/{editor}/{id}` uses `PATCH` but no schema for partial vs full update is defined.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+---
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## How to Contribute
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+1. **Fork** the repo and create a feature branch.
+2. Add or update tests under `src/test/java/com/football/apitests`.
+3. Update data providers in `PlayerDataProviders` if new scenarios need parameters.
+4. Run `./gradlew clean test allureReport` and verify the Allure report.
+5. Open a Pull Request with a clear description of changes.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+---
